@@ -3,38 +3,70 @@ import ReactDOM from 'react-dom';
 import './index.css';
 
 function Square(props) {
-  if (props.value === 'X') {
-    return (
-      <button 
-        className="square" 
-        onClick={props.onClick}
-        style={{color:'#F95F58'}}
-      >
-        {props.value}
-      </button>
-    );
-  } else {
-    return (
-      <button 
-        className="square" 
-        onClick={props.onClick}
-        style={{color:'#5E79E0'}}
-      >
-        {props.value}
-      </button>
-    );
-  }
+  const color = props.value === 'X'?'#F95F58':'#5E79E0';
+  return (
+    <button 
+      className="square" 
+      onClick={props.onClick}
+      style={{color: `${color}`,background:`${props.bgColor}`}}
+    >
+      {props.value}
+    </button>
+  );
 }
 
 class Board extends React.Component {
+  getWinnerSquares(squares) {
+    const lines = [
+      [0,1,2],
+      [3,4,5],
+      [6,7,8],
+      [0,3,6],
+      [1,4,7],
+      [2,5,8],
+      [0,4,8],
+      [2,4,6],
+    ]
+
+    for (let i = 0; i < lines.length; i++) {
+      const [a,b,c] = lines[i];
+      if(squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+        return [a,b,c];
+      }
+    }
+    return null;
+  }
+
   renderSquare(i) {
-    return (
-      <Square 
-        key={i} 
-        value={this.props.squares[i]} 
-        onClick={() => this.props.onClick(i)}
-      />
-    );
+    const winnerSquares = this.getWinnerSquares(this.props.squares);
+    if (winnerSquares) {
+      if (i === winnerSquares[0]|| i === winnerSquares[1] || i === winnerSquares[2]) {
+        return (
+          <Square 
+            key={i} 
+            value={this.props.squares[i]} 
+            onClick={() => this.props.onClick(i)}
+            bgColor={'lightblue'}
+          />
+        );
+      } else {
+        return (
+          <Square 
+            key={i} 
+            value={this.props.squares[i]} 
+            onClick={() => this.props.onClick(i)}
+          />
+        );
+      }
+    } else {
+      return (
+        <Square 
+          key={i} 
+          value={this.props.squares[i]} 
+          onClick={() => this.props.onClick(i)}
+        />
+      );
+    }
   } 
 
   render() {
@@ -65,7 +97,8 @@ class Game extends React.Component {
       }],
       locations:[''],
       stepNumber: 0,
-      xIsNext: true
+      xIsNext: true,
+      isAsc: true,
     };
     this.initialState = this.state;
   }
@@ -106,7 +139,7 @@ class Game extends React.Component {
       }]),
       stepNumber: history.length,
       xIsNext: !this.state.xIsNext,
-      locations: locations 
+      locations: locations
     })
   }
 
@@ -114,6 +147,12 @@ class Game extends React.Component {
     this.setState({
       stepNumber: step,
       xIsNext: (step % 2) === 0
+    })
+  }
+
+  sortMoves = () => {
+    this.setState({
+      isAsc: !this.state.isAsc,
     })
   }
 
@@ -149,15 +188,21 @@ class Game extends React.Component {
           </li>
         );
       }
-    })
+    });
 
+    if(!this.state.isAsc) {
+      moves.reverse();
+    }
 
     let status;
     if (winner) {
       status = 'Winner: ' + winner;
+
     } else {
       status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
     }
+
+    const sortText = this.state.isAsc ? 'Sort in ascending' : 'Sort in descending';
 
     return (
       <div className="game">
@@ -169,7 +214,8 @@ class Game extends React.Component {
         </div>
         <div className="game-info">
           <div className="status">{status}</div>
-          <ol>{moves}</ol>
+          <button className='sort-btn' onClick={this.sortMoves}>{sortText}</button>
+          <ol>{moves}</ol> 
           <button className='reset-btn' onClick={this.resetGame}>Reset game</button>
         </div>
       </div>
